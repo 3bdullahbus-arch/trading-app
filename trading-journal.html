@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دفتر التداول</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+:root {
+  --primary: #791C2E;
+  --primary-light: #9b2438;
+  --primary-dark: #5a1422;
+  --bg: #F8F6EF;
+  --card: #ffffff;
+  --card2: #f0ede4;
+  --border: #e0d9cc;
+  --text: #1a1a1a;
+  --muted: #8a7f72;
+  --green: #1a7a4a;
+  --green-bg: #e8f5ee;
+  --red-bg: #fceef0;
+  --gold: #8a6a1a;
+  --gold-bg: #fdf6e3;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Tajawal',sans-serif;min-height:100vh;}
+
+/* HEADER */
+.header{background:var(--primary);padding:24px 20px 20px;text-align:center;position:relative;overflow:hidden;}
+.header::before{content:'';position:absolute;top:-40px;left:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,0.04);}
+.header h1{color:#F8F6EF;font-size:1.6rem;font-weight:900;position:relative;z-index:1;}
+.header p{color:rgba(248,246,239,0.55);font-size:0.8rem;margin-top:3px;position:relative;z-index:1;}
+
+/* TABS */
+.tabs{display:flex;background:var(--card);border-bottom:2px solid var(--border);position:sticky;top:0;z-index:100;}
+.tab{flex:1;padding:13px 8px;text-align:center;font-size:0.82rem;font-weight:800;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;letter-spacing:0.3px;}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+
+/* PAGES */
+.page{display:none;padding:16px;max-width:680px;margin:0 auto;}
+.page.active{display:block;}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(121,28,46,0.05);}
+.card-title{font-size:0.75rem;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid var(--primary);display:flex;align-items:center;gap:6px;}
+
+/* INPUTS */
+label{display:block;font-size:0.8rem;color:var(--muted);margin-bottom:5px;font-weight:600;}
+input,select{width:100%;background:var(--card2);border:1.5px solid var(--border);border-radius:9px;padding:10px 13px;color:var(--text);font-family:'Tajawal',sans-serif;font-size:0.95rem;font-weight:600;margin-bottom:12px;transition:border-color 0.2s;direction:ltr;text-align:right;}
+input:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(121,28,46,0.08);}
+select{direction:rtl;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+
+/* BUTTONS */
+.btn{width:100%;padding:12px;border:none;border-radius:9px;font-family:'Tajawal',sans-serif;font-size:0.95rem;font-weight:800;cursor:pointer;transition:all 0.2s;}
+.btn-p{background:var(--primary);color:#F8F6EF;}
+.btn-p:hover{background:var(--primary-light);transform:translateY(-1px);box-shadow:0 4px 14px rgba(121,28,46,0.28);}
+.btn-o{background:transparent;color:var(--primary);border:2px solid var(--primary);margin-top:8px;}
+.btn-o:hover{background:var(--primary);color:#F8F6EF;}
+.btn-sm{padding:9px 14px;font-size:0.82rem;width:auto;}
+.btn-gold{background:var(--gold);color:#F8F6EF;}
+.btn-green{background:var(--green);color:#F8F6EF;}
+
+/* RESULT PILLS */
+.pills{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+.pill{border-radius:11px;padding:13px 14px;text-align:center;}
+.pill.g{background:var(--green-bg);border:1.5px solid rgba(26,122,74,0.2);}
+.pill.r{background:var(--red-bg);border:1.5px solid rgba(121,28,46,0.15);}
+.pill-lbl{font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
+.pill-val{font-size:1.35rem;font-weight:900;}
+.pill.g .pill-val{color:var(--green);}
+.pill.r .pill-val{color:var(--primary);}
+.pill-sub{font-size:0.72rem;margin-top:2px;}
+.pill.g .pill-sub{color:var(--green);}
+.pill.r .pill-sub{color:var(--primary);}
+
+/* RESULT ROWS */
+.rrows{background:var(--card2);border-radius:11px;padding:12px;margin-top:12px;}
+.rrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.88rem;}
+.rrow:last-child{border-bottom:none;}
+.rl{color:var(--muted);font-weight:500;}
+.rv{font-weight:800;}
+.green{color:var(--green);}
+.red{color:var(--primary);}
+.gold{color:var(--gold);}
+
+/* DIVIDER */
+.divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--muted);font-size:0.78rem;font-weight:600;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* STATS */
+.stats4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+.sbox{background:var(--card2);border-radius:11px;padding:11px 6px;text-align:center;border:1px solid var(--border);}
+.sval{font-size:1.2rem;font-weight:900;margin-bottom:2px;}
+.slbl{font-size:0.67rem;color:var(--muted);font-weight:600;}
+
+/* NET BANNER */
+.net{background:var(--primary);border-radius:12px;padding:13px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;color:#F8F6EF;}
+.net-l{font-size:0.78rem;opacity:0.65;font-weight:600;}
+.net-v{font-size:1.5rem;font-weight:900;}
+.net-r{text-align:left;}
+.net-rs{font-size:0.85rem;font-weight:800;margin-bottom:2px;}
+
+/* TABLE */
+.twrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:0.8rem;min-width:520px;}
+th{background:var(--primary);color:#F8F6EF;padding:9px 7px;text-align:center;font-weight:700;font-size:0.72rem;letter-spacing:0.3px;}
+td{padding:9px 7px;text-align:center;border-bottom:1px solid var(--border);font-weight:500;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--card2);}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:0.7rem;font-weight:800;}
+.bw{background:var(--green-bg);color:var(--green);}
+.bl{background:var(--red-bg);color:var(--primary);}
+.bo{background:var(--gold-bg);color:var(--gold);}
+
+/* MISC */
+.sym{font-weight:900;color:var(--primary);}
+.empty{text-align:center;padding:28px;color:var(--muted);font-size:0.88rem;}
+.del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.9rem;transition:color 0.2s;}
+.del:hover{color:var(--primary);}
+.eye{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.9rem;transition:color 0.2s;margin-left:4px;}
+.eye:hover{color:var(--green);}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;padding:16px;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--card);border-radius:16px;padding:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;}
+.modal h3{font-size:1rem;font-weight:800;color:var(--primary);margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--primary);}
+.modal-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.88rem;}
+.modal-row:last-child{border-bottom:none;}
+.modal-close{width:100%;margin-top:14px;}
+
+/* MONTH SUMMARY */
+.month-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.mcard{background:var(--card2);border-radius:11px;padding:13px;text-align:center;border:1px solid var(--border);}
+.mcard-v{font-size:1.3rem;font-weight:900;margin-bottom:3px;}
+.mcard-l{font-size:0.7rem;color:var(--muted);font-weight:600;}
+.best-worst{background:var(--card2);border-radius:11px;padding:13px;margin-bottom:10px;}
+.bw-title{font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.bw-row{display:flex;justify-content:space-between;align-items:center;font-size:0.88rem;}
+
+/* BACKUP SECTION */
+.backup-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+@media(max-width:480px){
+  .row2,.row3{grid-template-columns:1fr;}
+  .stats4{grid-template-columns:repeat(2,1fr);}
+  .pills{grid-template-columns:1fr 1fr;}
+  .month-cards{grid-template-columns:1fr 1fr;}
+  .backup-btns{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📈 دفتر التداول</h1>
+  <p>احسب · سجّل · تابع</p>
+  <div id="syncStatus" style="font-size:0.75rem;margin-top:6px;opacity:0.8;position:relative;z-index:1;">⏳ جاري الاتصال...</div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="showTab('calc')">⚡ الحاسبة</div>
+  <div class="tab" onclick="showTab('quick')">➕ تسجيل سريع</div>
+  <div class="tab" onclick="showTab('journal')">📒 السجل</div>
+  <div class="tab" onclick="showTab('month')">📊 الشهر</div>
+</div>
+
+<!-- ======= PAGE 1: SMART CALCULATOR ======= -->
+<div class="page active" id="tab-calc">
+
+  <div class="card">
+    <div class="card-title">🧠 حاسبة ذكية</div>
+    <p style="font-size:0.78rem;color:var(--muted);margin-bottom:14px;line-height:1.5;">أدخل أي مجموعة من البيانات وتطلع النتائج لحظياً ⚡</p>
+
+    <!-- SECTION 1: السهم والسعر -->
+    <div style="background:var(--card2);border-radius:11px;padding:13px;margin-bottom:10px;">
+      <div style="font-size:0.7rem;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📌 السهم</div>
+      <label>سعر السهم الحالي ($) <span style="color:var(--primary);">*</span></label>
+      <input type="number" id="price" placeholder="0.0000" step="0.0001" inputmode="decimal" oninput="smartCalc()">
+    </div>
+
+    <!-- SECTION 2: نسبة ربح ووقف -->
+    <div style="background:var(--card2);border-radius:11px;padding:13px;margin-bottom:10px;">
+      <div style="font-size:0.7rem;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📈 النسب — اختياري</div>
+      <div class="row2">
+        <div>
+          <label>نسبة الربح (%)</label>
+          <input type="number" id="profitPct" placeholder="مثال: 15" step="0.1" inputmode="decimal" oninput="smartCalc()">
+        </div>
+        <div>
+          <label>وقف الخسارة (%)</label>
+          <input type="number" id="stopPct" placeholder="مثال: 5" step="0.1" inputmode="decimal" oninput="smartCalc()">
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: المبالغ -->
+    <div style="background:var(--card2);border-radius:11px;padding:13px;margin-bottom:10px;">
+      <div style="font-size:0.7rem;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">💰 المبالغ — اختياري</div>
+      <div class="row2">
+        <div>
+          <label>مبلغ الدخول (﷼)</label>
+          <input type="number" id="entryRiyal" placeholder="مثال: 500" inputmode="decimal" oninput="smartCalc()">
+        </div>
+        <div>
+          <label>المبلغ المستهدف (﷼)</label>
+          <input type="number" id="targetRiyal" placeholder="مثال: 700" inputmode="decimal" oninput="smartCalc()">
+        </div>
+      </div>
+    </div>
+
+    <!-- زر مسح -->
+    <button class="btn btn-o" onclick="clearCalc()" style="margin-bottom:14px;font-size:0.82rem;padding:9px;">🗑 مسح الكل</button>
+
+    <!-- النتائج الذكية -->
+    <div id="smartResults" style="display:none;">
+
+      <!-- نتائج النسب -->
+      <div id="pctResults" style="display:none;">
+        <div class="pills">
+          <div class="pill g">
+            <div class="pill-lbl">🎯 سعر الهدف</div>
+            <div class="pill-val" id="rTargetPrice">-</div>
+            <div class="pill-sub" id="rTargetPct">-</div>
+          </div>
+          <div class="pill r">
+            <div class="pill-lbl">🛑 وقف الخسارة</div>
+            <div class="pill-val" id="rStopPrice">-</div>
+            <div class="pill-sub" id="rStopPct">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- نتائج المبالغ -->
+      <div id="amtResults" style="display:none;margin-top:10px;">
+        <div class="rrows">
+          <div class="rrow" id="rowShares" style="display:none;">
+            <span class="rl">عدد الأسهم التقريبي</span>
+            <span class="rv" id="rShares">-</span>
+          </div>
+          <div class="rrow" id="rowNeededPct" style="display:none;">
+            <span class="rl">النسبة المطلوبة للهدف</span>
+            <span class="rv green" id="rNeededPct">-</span>
+          </div>
+          <div class="rrow" id="rowNeededPrice" style="display:none;">
+            <span class="rl">سعر البيع المطلوب</span>
+            <span class="rv green" id="rNeededPrice">-</span>
+          </div>
+          <div class="rrow" id="rowTargetProfit" style="display:none;">
+            <span class="rl">الربح من الصفقة (﷼)</span>
+            <span class="rv green" id="rTargetProfit">-</span>
+          </div>
+          <div class="rrow" id="rowAfterSell" style="display:none;">
+            <span class="rl">المبلغ بعد البيع (﷼)</span>
+            <span class="rv green" id="rAfterSell">-</span>
+          </div>
+          <div class="rrow" id="rowProfit" style="display:none;">
+            <span class="rl">الربح المتوقع (﷼)</span>
+            <span class="rv green" id="rProfit">-</span>
+          </div>
+          <div class="rrow" id="rowLoss" style="display:none;">
+            <span class="rl">الخسارة المحتملة (﷼)</span>
+            <span class="rv red" id="rLoss">-</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider">قررت تدخل؟</div>
+      <button class="btn btn-o" onclick="showFull()">✅ سجّل الصفقة</button>
+    </div>
+  </div>
+
+  <!-- Full Register -->
+  <div class="card" id="fullCard" style="display:none;">
+    <div class="card-title">📝 تفاصيل الصفقة</div>
+
+    <label>اسم السهم</label>
+    <input type="text" id="symbol" placeholder="مثال: RPGL" style="text-align:right;direction:rtl;">
+
+    <div class="row2">
+      <div>
+        <label>مبلغ الدخول (﷼)</label>
+        <input type="number" id="entryRiyal2" placeholder="مثال: 500" inputmode="decimal" oninput="calcFull()">
+      </div>
+      <div>
+        <label>سعر الشراء الفعلي ($)</label>
+        <input type="number" id="actualBuy" placeholder="0.0000" step="0.0001" inputmode="decimal" oninput="calcFull()">
+      </div>
+    </div>
+
+    <div class="rrows" id="fullResults" style="display:none;">
+      <div class="rrow"><span class="rl">مبلغ الدخول بالدولار</span><span class="rv" id="fEntryUSD">-</span></div>
+      <div class="rrow"><span class="rl">عدد الأسهم</span><span class="rv" id="fShares">-</span></div>
+      <div class="rrow"><span class="rl">سعر الهدف</span><span class="rv green" id="fTarget">-</span></div>
+      <div class="rrow"><span class="rl">المبلغ بعد البيع (﷼)</span><span class="rv green" id="fAfterSell">-</span></div>
+      <div class="rrow"><span class="rl">الربح المتوقع (﷼)</span><span class="rv green" id="fProfit">-</span></div>
+      <div class="rrow"><span class="rl">وقف الخسارة</span><span class="rv red" id="fStop">-</span></div>
+      <div class="rrow"><span class="rl">الخسارة المحتملة (﷼)</span><span class="rv red" id="fLoss">-</span></div>
+    </div>
+
+    <button class="btn btn-p" style="margin-top:12px;" onclick="registerTrade()">💾 حفظ الصفقة</button>
+    <button class="btn btn-o" onclick="cancelFull()">إلغاء</button>
+  </div>
+</div>
+
+<!-- ======= PAGE 2: QUICK ADD ======= -->
+<div class="page" id="tab-quick">
+  <div class="card">
+    <div class="card-title">➕ تسجيل سريع للسجل</div>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;">سجّل صفقة فتحتها وقفلتها بدون حسابات مسبقة</p>
+
+    <label>اسم السهم</label>
+    <input type="text" id="qSym" placeholder="مثال: ATER" style="text-align:right;direction:rtl;">
+
+    <div class="row2">
+      <div>
+        <label>سعر الشراء ($)</label>
+        <input type="number" id="qBuy" placeholder="0.0000" step="0.0001" oninput="calcQuick()">
+      </div>
+      <div>
+        <label>سعر البيع ($)</label>
+        <input type="number" id="qSell" placeholder="0.0000" step="0.0001" oninput="calcQuick()">
+      </div>
+    </div>
+
+    <div class="row2">
+      <div>
+        <label>مبلغ الدخول (ريال)</label>
+        <input type="number" id="qRiyal" placeholder="مثال: 500" oninput="calcQuick()">
+      </div>
+      <div>
+        <label>عدد الأسهم</label>
+        <input type="number" id="qShares" placeholder="0" oninput="calcQuick()">
+      </div>
+    </div>
+
+    <div class="rrows" id="quickCalcResult" style="display:none;">
+      <div class="rrow"><span class="rl">الربح / الخسارة (ريال)</span><span class="rv" id="qPnL">-</span></div>
+      <div class="rrow"><span class="rl">النسبة</span><span class="rv" id="qPnLPct">-</span></div>
+    </div>
+
+    <button class="btn btn-p" style="margin-top:12px;" onclick="addQuickTrade()">💾 أضف للسجل</button>
+  </div>
+</div>
+
+<!-- ======= PAGE 3: JOURNAL ======= -->
+<div class="page" id="tab-journal">
+
+  <div class="card">
+    <div class="card-title">📊 إحصائيات</div>
+    <div class="stats4">
+      <div class="sbox"><div class="sval" style="color:var(--primary);" id="sTot">0</div><div class="slbl">الصفقات</div></div>
+      <div class="sbox"><div class="sval green" id="sW">0</div><div class="slbl">رابحة</div></div>
+      <div class="sbox"><div class="sval red" id="sL">0</div><div class="slbl">خاسرة</div></div>
+      <div class="sbox"><div class="sval gold" id="sWR">0%</div><div class="slbl">نسبة النجاح</div></div>
+    </div>
+    <div class="net">
+      <div>
+        <div class="net-l">صافي الأسبوع</div>
+        <div class="net-v" id="sNet">0.00 ﷼</div>
+      </div>
+      <div class="net-r">
+        <div class="net-l">إجمالي الربح</div>
+        <div class="net-rs green" id="sPro">0.00 ﷼</div>
+        <div class="net-l" style="margin-top:3px;">إجمالي الخسارة</div>
+        <div class="net-rs" style="opacity:0.8;" id="sLoss">0.00 ﷼</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Close open trade -->
+  <div class="card" id="closeCard" style="display:none;">
+    <div class="card-title">⏳ أغلق صفقة مفتوحة</div>
+    <label>اختر الصفقة</label>
+    <select id="closePicker"></select>
+    <div class="row2">
+      <div>
+        <label>سعر البيع ($)</label>
+        <input type="number" id="closePrice" placeholder="0.0000" step="0.0001">
+      </div>
+      <div style="display:flex;align-items:flex-end;padding-bottom:12px;">
+        <button class="btn btn-p" onclick="closeTrade()">إغلاق ✓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card">
+    <div class="card-title">📒 الصفقات</div>
+    <div class="twrap">
+      <table>
+        <thead>
+          <tr>
+            <th>السهم</th>
+            <th>التاريخ</th>
+            <th>شراء $</th>
+            <th>بيع $</th>
+            <th>ربح/خسارة ﷼</th>
+            <th>الحالة</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="jBody">
+          <tr><td colspan="7" class="empty">لا توجد صفقات 📭</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Backup -->
+  <div class="card">
+    <div class="card-title">💾 نسخ احتياطي</div>
+    <p style="font-size:0.8rem;color:var(--muted);margin-bottom:12px;">احفظ بياناتك أسبوعياً عشان ما تضيع</p>
+    <div class="backup-btns">
+      <button class="btn btn-gold" onclick="exportData()">⬇️ تحميل النسخة</button>
+      <label class="btn btn-green" style="display:flex;align-items:center;justify-content:center;cursor:pointer;margin-bottom:0;">
+        ⬆️ استعادة
+        <input type="file" accept=".json" onchange="importData(event)" style="display:none;">
+      </label>
+    </div>
+  </div>
+</div>
+
+<!-- ======= PAGE 4: MONTH SUMMARY ======= -->
+<div class="page" id="tab-month">
+  <div class="card">
+    <div class="card-title">📊 ملخص الشهر</div>
+    <p style="font-size:0.8rem;color:var(--muted);margin-bottom:14px;">ارفع نسخ الأسابيع (1-4 ملفات) عشان تشوف ملخص الشهر الكامل</p>
+
+    <label class="btn btn-p" style="display:flex;align-items:center;justify-content:center;cursor:pointer;margin-bottom:12px;">
+      📂 ارفع ملفات الأسابيع
+      <input type="file" accept=".json" multiple onchange="loadMonthFiles(event)" style="display:none;">
+    </label>
+
+    <div id="monthResult" style="display:none;">
+      <div class="month-cards">
+        <div class="mcard"><div class="mcard-v" style="color:var(--primary);" id="mTot">0</div><div class="mcard-l">إجمالي الصفقات</div></div>
+        <div class="mcard"><div class="mcard-v gold" id="mWR">0%</div><div class="mcard-l">نسبة النجاح</div></div>
+        <div class="mcard"><div class="mcard-v green" id="mPro">0 ﷼</div><div class="mcard-l">إجمالي الربح</div></div>
+        <div class="mcard"><div class="mcard-v red" id="mLoss">0 ﷼</div><div class="mcard-l">إجمالي الخسارة</div></div>
+      </div>
+
+      <div class="rrows" style="margin-bottom:12px;">
+        <div class="rrow"><span class="rl">صافي الشهر</span><span class="rv" id="mNet">-</span></div>
+        <div class="rrow"><span class="rl">متوسط الربح للصفقة</span><span class="rv green" id="mAvg">-</span></div>
+        <div class="rrow"><span class="rl">الصفقات الرابحة</span><span class="rv green" id="mW">-</span></div>
+        <div class="rrow"><span class="rl">الصفقات الخاسرة</span><span class="rv red" id="mL">-</span></div>
+      </div>
+
+      <div class="best-worst">
+        <div class="bw-title">🏆 أفضل صفقة</div>
+        <div class="bw-row">
+          <span class="sym" id="mBestSym">-</span>
+          <span class="green" style="font-weight:800;" id="mBestPnl">-</span>
+        </div>
+      </div>
+      <div class="best-worst">
+        <div class="bw-title">📉 أسوأ صفقة</div>
+        <div class="bw-row">
+          <span class="sym" id="mWorstSym">-</span>
+          <span class="red" style="font-weight:800;" id="mWorstPnl">-</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Trade Details -->
+<div class="modal-bg" id="detailModal">
+  <div class="modal">
+    <h3>📋 تفاصيل الصفقة</h3>
+    <div id="modalContent"></div>
+    <button class="btn btn-p modal-close" onclick="closeModal()">إغلاق</button>
+  </div>
+</div>
+
+<script>
+const USD_SAR = 3.75;
+let trades = JSON.parse(localStorage.getItem('daftar_v2') || '[]');
+let calc = {};
+
+// TABS
+function showTab(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'journal') render();
+}
+
+// SMART CALC
+function smartCalc() {
+  const price = parseFloat(document.getElementById('price').value);
+  const profitPct = parseFloat(document.getElementById('profitPct').value);
+  const stopPct = parseFloat(document.getElementById('stopPct').value);
+  const entryRiyal = parseFloat(document.getElementById('entryRiyal').value);
+  const targetRiyal = parseFloat(document.getElementById('targetRiyal').value);
+
+  if (!price) { document.getElementById('smartResults').style.display = 'none'; return; }
+
+  let hasResults = false;
+  const pctDiv = document.getElementById('pctResults');
+
+  if (profitPct || stopPct) {
+    pctDiv.style.display = 'block'; hasResults = true;
+    if (profitPct) {
+      const target = price * (1 + profitPct / 100);
+      calc.target = target; calc.profitPct = profitPct;
+      document.getElementById('rTargetPrice').textContent = '$' + target.toFixed(4);
+      document.getElementById('rTargetPct').textContent = '+' + profitPct + '%';
+    } else { document.getElementById('rTargetPrice').textContent = '-'; document.getElementById('rTargetPct').textContent = ''; }
+    if (stopPct) {
+      const stop = price * (1 - stopPct / 100);
+      calc.stop = stop; calc.stopPct = stopPct;
+      document.getElementById('rStopPrice').textContent = '$' + stop.toFixed(4);
+      document.getElementById('rStopPct').textContent = '-' + stopPct + '%';
+    } else { document.getElementById('rStopPrice').textContent = '-'; document.getElementById('rStopPct').textContent = ''; }
+  } else { pctDiv.style.display = 'none'; }
+
+  const amtDiv = document.getElementById('amtResults');
+  if (entryRiyal || targetRiyal) {
+    amtDiv.style.display = 'block'; hasResults = true;
+    if (entryRiyal) {
+      const shares = Math.floor(entryRiyal / (USD_SAR * price));
+      calc.shares = shares; calc.entryRiyal = entryRiyal;
+      show('rowShares'); document.getElementById('rShares').textContent = shares.toLocaleString() + ' سهم';
+      if (profitPct) {
+        const target = price * (1 + profitPct / 100);
+        const afterSell = shares * target * USD_SAR;
+        const profit = afterSell - entryRiyal;
+        show('rowAfterSell'); document.getElementById('rAfterSell').textContent = afterSell.toFixed(2) + ' ﷼';
+        show('rowProfit'); document.getElementById('rProfit').textContent = '+' + profit.toFixed(2) + ' ﷼';
+      } else { hide('rowAfterSell'); hide('rowProfit'); }
+      if (stopPct) {
+        const stop = price * (1 - stopPct / 100);
+        const loss = shares * (price - stop) * USD_SAR;
+        show('rowLoss'); document.getElementById('rLoss').textContent = '-' + loss.toFixed(2) + ' ﷼';
+      } else { hide('rowLoss'); }
+      if (targetRiyal) {
+        const neededSellPrice = targetRiyal / (shares * USD_SAR);
+        const neededPct = ((neededSellPrice / price) - 1) * 100;
+        calc.target = neededSellPrice; calc.profitPct = neededPct;
+        const targetProfit = targetRiyal - entryRiyal;
+        show('rowNeededPct'); document.getElementById('rNeededPct').textContent = (neededPct >= 0 ? '+' : '') + neededPct.toFixed(2) + '%';
+        show('rowNeededPrice'); document.getElementById('rNeededPrice').textContent = '$' + neededSellPrice.toFixed(4);
+        show('rowTargetProfit'); document.getElementById('rTargetProfit').textContent = '+' + targetProfit.toFixed(2) + ' ﷼';
+      } else { hide('rowNeededPct'); hide('rowNeededPrice'); hide('rowTargetProfit'); }
+    } else {
+      hide('rowShares'); hide('rowAfterSell'); hide('rowProfit'); hide('rowLoss'); hide('rowNeededPrice'); hide('rowTargetProfit');
+      show('rowNeededPct'); document.getElementById('rNeededPct').textContent = 'أدخل مبلغ الدخول';
+    }
+  } else { amtDiv.style.display = 'none'; }
+
+  document.getElementById('smartResults').style.display = hasResults ? 'block' : 'none';
+  calc.price = price;
+}
+
+function show(id) { const el = document.getElementById(id); if(el) el.style.display = 'flex'; }
+function hide(id) { const el = document.getElementById(id); if(el) el.style.display = 'none'; }
+
+function clearCalc() {
+  ['price','profitPct','stopPct','entryRiyal','targetRiyal'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  document.getElementById('smartResults').style.display = 'none';
+  document.getElementById('fullCard').style.display = 'none';
+  calc = {};
+}
+
+function showFull() {
+  document.getElementById('fullCard').style.display = 'block';
+  document.getElementById('fullCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelFull() {
+  document.getElementById('fullCard').style.display = 'none';
+  document.getElementById('fullResults').style.display = 'none';
+  ['entryRiyal2','actualBuy','symbol'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+}
+
+function calcFull() {
+  const riyal = parseFloat(document.getElementById('entryRiyal2').value);
+  const buyPrice = parseFloat(document.getElementById('actualBuy').value);
+  if (!riyal || !buyPrice || !calc.target) return;
+  const shares = Math.floor(riyal / (USD_SAR * buyPrice));
+  const afterSellRiyal = shares * calc.target * USD_SAR;
+  const profitRiyal = afterSellRiyal - riyal;
+  const lossRiyal = calc.stop ? shares * (buyPrice - calc.stop) * USD_SAR : 0;
+  calc.shares = shares; calc.riyal = riyal; calc.actualBuy = buyPrice;
+  document.getElementById('fEntryUSD').textContent = '$' + (riyal / USD_SAR).toFixed(2);
+  document.getElementById('fShares').textContent = shares.toLocaleString() + ' سهم';
+  document.getElementById('fTarget').textContent = '$' + calc.target.toFixed(4);
+  document.getElementById('fAfterSell').textContent = afterSellRiyal.toFixed(2) + ' ﷼';
+  document.getElementById('fProfit').textContent = '+' + profitRiyal.toFixed(2) + ' ﷼';
+  document.getElementById('fStop').textContent = calc.stop ? '$' + calc.stop.toFixed(4) : '-';
+  document.getElementById('fLoss').textContent = calc.stop ? '-' + lossRiyal.toFixed(2) + ' ﷼' : '-';
+  document.getElementById('fullResults').style.display = 'block';
+}
+
+function registerTrade() {
+  const symbol = document.getElementById('symbol').value.trim().toUpperCase();
+  const riyal = parseFloat(document.getElementById('entryRiyal2').value);
+  const buyPrice = parseFloat(document.getElementById('actualBuy').value);
+  if (!symbol || !riyal || !buyPrice) { alert('أكمل البيانات!'); return; }
+  const shares = Math.floor(riyal / (USD_SAR * buyPrice));
+  trades.push({
+    id: Date.now(), symbol,
+    date: new Date().toLocaleDateString('ar-SA'),
+    buyPrice, shares, entryRiyal: riyal,
+    target: calc.target, stop: calc.stop,
+    profitPct: calc.profitPct, stopPct: calc.stopPct,
+    sellPrice: null, pnlRiyal: null, status: 'open', type: 'full'
+  });
+  save(); cancelFull();
+  document.getElementById('smartResults').style.display = 'none';
+  ['price','profitPct','stopPct','entryRiyal','targetRiyal'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  calc = {};
+  alert('✅ تم تسجيل الصفقة!');
+}
+
+// QUICK ADD
+function calcQuick() {
+  const buy = parseFloat(document.getElementById('qBuy').value);
+  const sell = parseFloat(document.getElementById('qSell').value);
+  const riyal = parseFloat(document.getElementById('qRiyal').value);
+  const shares = parseFloat(document.getElementById('qShares').value);
+  if (!buy || !sell || (!riyal && !shares)) { document.getElementById('quickCalcResult').style.display = 'none'; return; }
+
+  let pnlRiyal, pct;
+  if (shares) {
+    pnlRiyal = shares * (sell - buy) * USD_SAR;
+    pct = ((sell - buy) / buy * 100).toFixed(2);
+  } else {
+    const sh = Math.floor(riyal / (USD_SAR * buy));
+    pnlRiyal = sh * (sell - buy) * USD_SAR;
+    pct = ((sell - buy) / buy * 100).toFixed(2);
+  }
+
+  const pnlEl = document.getElementById('qPnL');
+  const pctEl = document.getElementById('qPnLPct');
+  pnlEl.textContent = (pnlRiyal >= 0 ? '+' : '') + pnlRiyal.toFixed(2) + ' ﷼';
+  pnlEl.className = 'rv ' + (pnlRiyal >= 0 ? 'green' : 'red');
+  pctEl.textContent = (pct >= 0 ? '+' : '') + pct + '%';
+  pctEl.className = 'rv ' + (pct >= 0 ? 'green' : 'red');
+  document.getElementById('quickCalcResult').style.display = 'block';
+}
+
+function addQuickTrade() {
+  const symbol = document.getElementById('qSym').value.trim().toUpperCase();
+  const buy = parseFloat(document.getElementById('qBuy').value);
+  const sell = parseFloat(document.getElementById('qSell').value);
+  const riyal = parseFloat(document.getElementById('qRiyal').value);
+  const sharesInput = parseFloat(document.getElementById('qShares').value);
+  if (!symbol || !buy || !sell) { alert('أدخل اسم السهم وسعر الشراء والبيع!'); return; }
+
+  const shares = sharesInput || Math.floor(riyal / (USD_SAR * buy));
+  const entryRiyal = riyal || shares * buy * USD_SAR;
+  const pnlRiyal = shares * (sell - buy) * USD_SAR;
+
+  trades.push({
+    id: Date.now(), symbol,
+    date: new Date().toLocaleDateString('ar-SA'),
+    buyPrice: buy, shares, entryRiyal,
+    target: null, stop: null,
+    sellPrice: sell, pnlRiyal,
+    status: pnlRiyal >= 0 ? 'win' : 'loss',
+    type: 'quick'
+  });
+  save(); render();
+  ['qSym','qBuy','qSell','qRiyal','qShares'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('quickCalcResult').style.display = 'none';
+  alert('✅ تمت الإضافة للسجل!');
+}
+
+// CLOSE TRADE
+function closeTrade() {
+  const id = parseInt(document.getElementById('closePicker').value);
+  const sellPrice = parseFloat(document.getElementById('closePrice').value);
+  if (!sellPrice) { alert('أدخل سعر البيع!'); return; }
+  const t = trades.find(x => x.id === id);
+  if (!t) return;
+  t.sellPrice = sellPrice;
+  t.pnlRiyal = t.shares * (sellPrice - t.buyPrice) * USD_SAR;
+  t.status = t.pnlRiyal >= 0 ? 'win' : 'loss';
+  save(); render();
+  document.getElementById('closePrice').value = '';
+}
+
+function deleteTrade(id) {
+  if (!confirm('حذف؟')) return;
+  trades = trades.filter(t => t.id !== id);
+  save(); render();
+}
+
+// MODAL
+function showDetail(id) {
+  const t = trades.find(x => x.id === id);
+  if (!t) return;
+  const pnlColor = !t.pnlRiyal ? '' : t.pnlRiyal >= 0 ? 'green' : 'red';
+  document.getElementById('modalContent').innerHTML = `
+    <div class="modal-row"><span style="color:var(--muted);">السهم</span><span style="font-weight:900;color:var(--primary);">${t.symbol}</span></div>
+    <div class="modal-row"><span style="color:var(--muted);">التاريخ</span><span>${t.date}</span></div>
+    <div class="modal-row"><span style="color:var(--muted);">سعر الشراء</span><span>$${t.buyPrice.toFixed(4)}</span></div>
+    <div class="modal-row"><span style="color:var(--muted);">عدد الأسهم</span><span>${t.shares.toLocaleString()}</span></div>
+    <div class="modal-row"><span style="color:var(--muted);">مبلغ الدخول</span><span>${t.entryRiyal ? t.entryRiyal.toFixed(2) + ' ﷼' : '-'}</span></div>
+    ${t.target ? `<div class="modal-row"><span style="color:var(--muted);">سعر الهدف</span><span class="green">$${t.target.toFixed(4)}</span></div>` : ''}
+    ${t.stop ? `<div class="modal-row"><span style="color:var(--muted);">وقف الخسارة</span><span class="red">$${t.stop.toFixed(4)}</span></div>` : ''}
+    ${t.profitPct ? `<div class="modal-row"><span style="color:var(--muted);">نسبة الربح المستهدفة</span><span class="green">+${t.profitPct}%</span></div>` : ''}
+    ${t.stopPct ? `<div class="modal-row"><span style="color:var(--muted);">نسبة وقف الخسارة</span><span class="red">-${t.stopPct}%</span></div>` : ''}
+    ${t.sellPrice ? `<div class="modal-row"><span style="color:var(--muted);">سعر البيع</span><span>$${t.sellPrice.toFixed(4)}</span></div>` : ''}
+    ${t.pnlRiyal !== null ? `<div class="modal-row"><span style="color:var(--muted);">الربح / الخسارة</span><span class="${pnlColor}" style="font-weight:900;">${t.pnlRiyal >= 0 ? '+' : ''}${t.pnlRiyal.toFixed(2)} ﷼</span></div>` : ''}
+    <div class="modal-row"><span style="color:var(--muted);">الحالة</span><span>${t.status === 'win' ? '✅ رابح' : t.status === 'loss' ? '❌ خاسر' : '⏳ مفتوح'}</span></div>
+    <div class="modal-row"><span style="color:var(--muted);">النوع</span><span>${t.type === 'quick' ? '⚡ سريع' : '📝 مفصّل'}</span></div>
+  `;
+  document.getElementById('detailModal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('detailModal').classList.remove('open'); }
+document.getElementById('detailModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+// RENDER
+function render() {
+  const tbody = document.getElementById('jBody');
+  if (!trades.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">لا توجد صفقات 📭</td></tr>';
+    updateStats(); return;
+  }
+
+  tbody.innerHTML = trades.slice().reverse().map(t => {
+    const badge = t.status === 'win' ? '<span class="badge bw">رابح ✓</span>'
+      : t.status === 'loss' ? '<span class="badge bl">خاسر ✗</span>'
+      : '<span class="badge bo">مفتوح ⏳</span>';
+    const pnlPct = t.sellPrice && t.buyPrice ? (((t.sellPrice - t.buyPrice) / t.buyPrice) * 100).toFixed(2) : null;
+    const pnl = t.pnlRiyal !== null
+      ? `<span style="font-weight:800;color:${t.pnlRiyal>=0?'var(--green)':'var(--primary)'};">${t.pnlRiyal>=0?'+':''}${t.pnlRiyal.toFixed(2)} ﷼</span>
+         ${pnlPct ? `<br><span style="font-size:0.72rem;font-weight:700;color:${pnlPct>=0?'var(--green)':'var(--primary)'};">${pnlPct>=0?'+':''}${pnlPct}%</span>` : ''}`
+      : '<span style="color:var(--muted);">-</span>';
+    return `<tr>
+      <td class="sym">${t.symbol}</td>
+      <td style="color:var(--muted);font-size:0.75rem;">${t.date}</td>
+      <td>$${t.buyPrice.toFixed(4)}</td>
+      <td>${t.sellPrice ? '$'+t.sellPrice.toFixed(4) : '<span style="color:var(--muted);">-</span>'}</td>
+      <td>${pnl}</td>
+      <td>${badge}</td>
+      <td>
+        <button class="eye" onclick="showDetail(${t.id})">👁</button>
+        <button class="del" onclick="deleteTrade(${t.id})">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  updateStats();
+  updateClose();
+}
+
+function updateStats() {
+  const wins = trades.filter(t => t.status === 'win');
+  const losses = trades.filter(t => t.status === 'loss');
+  const total = trades.length;
+  const wr = total ? Math.round(wins.length/total*100) : 0;
+  const pro = wins.reduce((s,t) => s + t.pnlRiyal, 0);
+  const los = losses.reduce((s,t) => s + t.pnlRiyal, 0);
+  const net = pro + los;
+
+  document.getElementById('sTot').textContent = total;
+  document.getElementById('sW').textContent = wins.length;
+  document.getElementById('sL').textContent = losses.length;
+  document.getElementById('sWR').textContent = wr + '%';
+  const ne = document.getElementById('sNet');
+  ne.textContent = (net>=0?'+':'') + net.toFixed(2) + ' ﷼';
+  ne.style.color = net>=0 ? '#a8f0c8' : '#ffb3c1';
+  document.getElementById('sPro').textContent = '+' + pro.toFixed(2) + ' ﷼';
+  document.getElementById('sLoss').textContent = los.toFixed(2) + ' ﷼';
+}
+
+function updateClose() {
+  const open = trades.filter(t => t.status === 'open');
+  const card = document.getElementById('closeCard');
+  if (open.length) {
+    card.style.display = 'block';
+    document.getElementById('closePicker').innerHTML = open.map(t =>
+      `<option value="${t.id}">${t.symbol} — ${t.shares} سهم بـ $${t.buyPrice.toFixed(4)}</option>`
+    ).join('');
+  } else {
+    card.style.display = 'none';
+  }
+}
+
+// BACKUP
+function exportData() {
+  const now = new Date();
+  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const weekNum = Math.ceil(now.getDate() / 7);
+  const weekNames = ['الأول','الثاني','الثالث','الرابع','الخامس'];
+  const filename = `الأسبوع ${weekNames[weekNum-1]} ${months[now.getMonth()]} ${now.getFullYear()}.json`;
+  const blob = new Blob([JSON.stringify(trades, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if (!Array.isArray(imported)) throw new Error();
+      if (confirm(`استعادة ${imported.length} صفقة؟ سيتم استبدال البيانات الحالية.`)) {
+        trades = imported;
+        save(); render();
+        alert('✅ تمت الاستعادة!');
+      }
+    } catch { alert('❌ الملف غير صحيح!'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// MONTH SUMMARY
+function loadMonthFiles(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  let allTrades = [];
+  let loaded = 0;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (Array.isArray(data)) allTrades = allTrades.concat(data);
+      } catch {}
+      loaded++;
+      if (loaded === files.length) showMonthSummary(allTrades);
+    };
+    reader.readAsText(file);
+  });
+  e.target.value = '';
+}
+
+function showMonthSummary(all) {
+  const closed = all.filter(t => t.status !== 'open' && t.pnlRiyal !== null);
+  const wins = closed.filter(t => t.status === 'win');
+  const losses = closed.filter(t => t.status === 'loss');
+  const pro = wins.reduce((s,t) => s+t.pnlRiyal, 0);
+  const los = losses.reduce((s,t) => s+t.pnlRiyal, 0);
+  const net = pro + los;
+  const wr = closed.length ? Math.round(wins.length/closed.length*100) : 0;
+  const avg = closed.length ? net/closed.length : 0;
+
+  const sorted = [...closed].sort((a,b) => b.pnlRiyal - a.pnlRiyal);
+  const best = sorted[0];
+  const worst = sorted[sorted.length-1];
+
+  document.getElementById('mTot').textContent = all.length;
+  document.getElementById('mWR').textContent = wr + '%';
+  document.getElementById('mPro').textContent = '+' + pro.toFixed(2) + ' ﷼';
+  document.getElementById('mLoss').textContent = los.toFixed(2) + ' ﷼';
+  const mNet = document.getElementById('mNet');
+  mNet.textContent = (net>=0?'+':'') + net.toFixed(2) + ' ﷼';
+  mNet.className = 'rv ' + (net>=0?'green':'red');
+  document.getElementById('mAvg').textContent = (avg>=0?'+':'') + avg.toFixed(2) + ' ﷼';
+  document.getElementById('mW').textContent = wins.length + ' صفقة';
+  document.getElementById('mL').textContent = losses.length + ' صفقة';
+
+  if (best) {
+    document.getElementById('mBestSym').textContent = best.symbol;
+    document.getElementById('mBestPnl').textContent = '+' + best.pnlRiyal.toFixed(2) + ' ﷼';
+  }
+  if (worst) {
+    document.getElementById('mWorstSym').textContent = worst.symbol;
+    document.getElementById('mWorstPnl').textContent = worst.pnlRiyal.toFixed(2) + ' ﷼';
+  }
+
+  document.getElementById('monthResult').style.display = 'block';
+}
+
+// ======= FIREBASE =======
+const firebaseConfig = {
+  apiKey: "AIzaSyDJyfSERepH6rM7fV18s7-dsQmzH5gyZ1o",
+  authDomain: "trading-abdullah.firebaseapp.com",
+  projectId: "trading-abdullah",
+  storageBucket: "trading-abdullah.firebasestorage.app",
+  messagingSenderId: "590883654142",
+  appId: "1:590883654142:web:9e786d4e477f75088418af"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const docRef = db.collection('users').doc('abdullah');
+
+// Real-time listener - يحدث كل الأجهزة فوراً
+docRef.onSnapshot((snap) => {
+  if (snap.exists) {
+    const data = snap.data();
+    if (data && data.trades) {
+      trades = data.trades;
+      render();
+    }
+  }
+  const s = document.getElementById('syncStatus');
+  if(s){ s.textContent = '☁️ محفوظ'; s.style.color = '#1a7a4a'; }
+});
+
+function save() {
+  localStorage.setItem('daftar_v2', JSON.stringify(trades));
+  const s = document.getElementById('syncStatus');
+  if(s){ s.textContent = '⏳ يحفظ...'; s.style.color = '#8a6a1a'; }
+  docRef.set({ trades: trades, updatedAt: new Date().toISOString() })
+    .catch(e => {
+      console.error(e);
+      if(s){ s.textContent = '❌ خطأ'; s.style.color = '#791C2E'; }
+    });
+}
+
+render();
+</script>
+</body>
+</html>
