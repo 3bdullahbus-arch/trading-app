@@ -175,6 +175,33 @@ tr:hover td{background:var(--card2);}
 <!-- ======= PAGE 1: SMART CALCULATOR ======= -->
 <div class="page active" id="tab-calc">
 
+  <!-- QUICK DIFF CALCULATOR -->
+  <div class="card">
+    <div class="card-title">⚡ حاسبة الفرق السريعة</div>
+    <div class="row2">
+      <div>
+        <label>الرقم الحالي</label>
+        <input type="number" id="diffCurrent" placeholder="0" step="any" inputmode="decimal" oninput="diffCalc()">
+      </div>
+      <div>
+        <label>الرقم المستهدف</label>
+        <input type="number" id="diffTarget" placeholder="0" step="any" inputmode="decimal" oninput="diffCalc()">
+      </div>
+    </div>
+    <div id="diffResult" style="display:none;">
+      <div class="pills">
+        <div class="pill g">
+          <div class="pill-lbl">📊 النسبة المطلوبة</div>
+          <div class="pill-val" id="diffPct">-</div>
+        </div>
+        <div class="pill g">
+          <div class="pill-lbl">➕ الفرق</div>
+          <div class="pill-val" id="diffAmount">-</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-title">🧠 حاسبة ذكية</div>
     <p style="font-size:0.78rem;color:var(--muted);margin-bottom:14px;line-height:1.5;">أدخل أي مجموعة من البيانات وتطلع النتائج لحظياً ⚡</p>
@@ -353,6 +380,72 @@ tr:hover td{background:var(--card2);}
 <!-- ======= PAGE 3: JOURNAL ======= -->
 <div class="page" id="tab-journal">
 
+  <!-- PORTFOLIO TRACKING -->
+  <div class="card">
+    <div class="card-title">📅 تتبع المحفظة</div>
+
+    <!-- Weekly Goal -->
+    <div style="background:var(--card2);border-radius:11px;padding:13px;margin-bottom:10px;">
+      <div style="font-size:0.7rem;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">🎯 هدف الأسبوع</div>
+      <div class="row2">
+        <div>
+          <label>رصيد بداية الأسبوع (﷼)</label>
+          <input type="number" id="weekStart" placeholder="0" inputmode="decimal" oninput="updateGoals()">
+        </div>
+        <div>
+          <label>الهدف %</label>
+          <input type="number" id="weekGoalPct" placeholder="مثال: 100" inputmode="decimal" oninput="updateGoals()">
+        </div>
+      </div>
+      <div id="weekGoalResult" class="rrows" style="display:none;margin-top:0;">
+        <div class="rrow"><span class="rl">المستهدف</span><span class="rv green" id="weekGoalAmt">-</span></div>
+        <div class="rrow"><span class="rl">رصيدك الحالي (آخر يوم مسجل)</span><span class="rv" id="weekCurrentAmt">-</span></div>
+        <div class="rrow"><span class="rl">النتيجة</span><span class="rv" id="weekResultStatus">-</span></div>
+      </div>
+    </div>
+
+    <!-- Daily Tracking -->
+    <div style="background:var(--card2);border-radius:11px;padding:13px;margin-bottom:10px;">
+      <div style="font-size:0.7rem;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📆 تتبع اليوم</div>
+      <div class="row2">
+        <div>
+          <label>رصيد بداية اليوم (﷼)</label>
+          <input type="number" id="dayStart" placeholder="0" inputmode="decimal">
+        </div>
+        <div>
+          <label>هدف اليوم % — اختياري</label>
+          <input type="number" id="dayGoalPct" placeholder="مثال: 40" inputmode="decimal" oninput="updateDayGoal()">
+        </div>
+      </div>
+      <div id="dayGoalResult" class="rrows" style="display:none;margin-top:0;margin-bottom:12px;">
+        <div class="rrow"><span class="rl">المستهدف لليوم</span><span class="rv green" id="dayGoalAmt">-</span></div>
+      </div>
+      <label>رصيد نهاية اليوم (﷼)</label>
+      <input type="number" id="dayEnd" placeholder="0" inputmode="decimal">
+      <button class="btn btn-p" onclick="saveDailyEntry()">💾 حفظ اليوم</button>
+    </div>
+
+    <!-- Daily Table -->
+    <div class="twrap">
+      <table>
+        <thead>
+          <tr>
+            <th>التاريخ</th>
+            <th>البداية ﷼</th>
+            <th>النهاية ﷼</th>
+            <th>ربح/خسارة ﷼</th>
+            <th>النسبة</th>
+            <th>الهدف</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="dailyBody">
+          <tr><td colspan="7" class="empty">لا توجد بيانات 📭</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-title">📊 إحصائيات</div>
     <div class="stats4">
@@ -373,6 +466,7 @@ tr:hover td{background:var(--card2);}
         <div class="net-rs" style="opacity:0.8;" id="sLoss">0.00 ﷼</div>
       </div>
     </div>
+    <button class="btn btn-gold" onclick="closeWeek()">📦 إغلاق الأسبوع وأرشفته</button>
   </div>
 
   <!-- Close open trade -->
@@ -432,12 +526,7 @@ tr:hover td{background:var(--card2);}
 <div class="page" id="tab-month">
   <div class="card">
     <div class="card-title">📊 ملخص الشهر</div>
-    <p style="font-size:0.8rem;color:var(--muted);margin-bottom:14px;">ارفع نسخ الأسابيع (1-4 ملفات) عشان تشوف ملخص الشهر الكامل</p>
-
-    <label class="btn btn-p" style="display:flex;align-items:center;justify-content:center;cursor:pointer;margin-bottom:12px;">
-      📂 ارفع ملفات الأسابيع
-      <input type="file" accept=".json" multiple onchange="loadMonthFiles(event)" style="display:none;">
-    </label>
+    <p style="font-size:0.8rem;color:var(--muted);margin-bottom:14px;">يتجمع تلقائياً من كل الأسابيع المؤرشفة لهذا الشهر</p>
 
     <div id="monthResult" style="display:none;">
       <div class="month-cards">
@@ -469,6 +558,15 @@ tr:hover td{background:var(--card2);}
         </div>
       </div>
     </div>
+    <div id="monthEmpty" class="empty">لا توجد أسابيع مؤرشفة لهذا الشهر بعد 📭</div>
+  </div>
+
+  <!-- Archived Weeks -->
+  <div class="card">
+    <div class="card-title">📂 الأرشيف الأسبوعي</div>
+    <div id="archiveList">
+      <div class="empty">لا يوجد أسابيع مؤرشفة 📭</div>
+    </div>
   </div>
 </div>
 
@@ -484,6 +582,7 @@ tr:hover td{background:var(--card2);}
 <script>
 const USD_SAR = 3.75;
 let trades = JSON.parse(localStorage.getItem('daftar_v2') || '[]');
+let dailyEntries = JSON.parse(localStorage.getItem('daftar_daily') || '[]');
 let calc = {};
 
 // TABS
@@ -492,7 +591,115 @@ function showTab(id) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + id).classList.add('active');
   event.target.classList.add('active');
-  if (id === 'journal') render();
+  if (id === 'journal') { render(); renderDaily(); updateGoals(); }
+  if (id === 'month') { renderArchive(); showMonthSummary(); }
+}
+
+// QUICK DIFF CALC
+function diffCalc() {
+  const cur = parseFloat(document.getElementById('diffCurrent').value);
+  const tgt = parseFloat(document.getElementById('diffTarget').value);
+  if (!cur || !tgt) { document.getElementById('diffResult').style.display = 'none'; return; }
+  const diff = tgt - cur;
+  const pct = (diff / cur) * 100;
+  document.getElementById('diffPct').textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+  document.getElementById('diffAmount').textContent = (diff >= 0 ? '+' : '') + diff.toFixed(4);
+  document.getElementById('diffResult').style.display = 'block';
+}
+
+// ===== PORTFOLIO TRACKING =====
+function updateDayGoal() {
+  const start = parseFloat(document.getElementById('dayStart').value);
+  const pct = parseFloat(document.getElementById('dayGoalPct').value);
+  const box = document.getElementById('dayGoalResult');
+  if (!start || !pct) { box.style.display = 'none'; return; }
+  const target = start * (1 + pct / 100);
+  document.getElementById('dayGoalAmt').textContent = target.toFixed(2) + ' ﷼';
+  box.style.display = 'block';
+}
+
+function saveDailyEntry() {
+  const start = parseFloat(document.getElementById('dayStart').value);
+  const end = parseFloat(document.getElementById('dayEnd').value);
+  const goalPct = parseFloat(document.getElementById('dayGoalPct').value);
+  if (!start || !end) { alert('أدخل رصيد البداية والنهاية!'); return; }
+
+  const pnl = end - start;
+  const pct = (pnl / start) * 100;
+  const goalAmt = goalPct ? start * (1 + goalPct / 100) : null;
+  const hitGoal = goalAmt !== null ? end >= goalAmt : null;
+
+  dailyEntries.push({
+    id: Date.now(),
+    date: new Date().toLocaleDateString('ar-SA'),
+    start, end, pnl, pct,
+    goalPct: goalPct || null,
+    goalAmt
+  });
+  saveDaily();
+  renderDaily();
+  updateGoals();
+
+  document.getElementById('dayStart').value = '';
+  document.getElementById('dayEnd').value = '';
+  document.getElementById('dayGoalPct').value = '';
+  document.getElementById('dayGoalResult').style.display = 'none';
+  alert('✅ تم حفظ اليوم!');
+}
+
+function deleteDailyEntry(id) {
+  if (!confirm('حذف اليوم؟')) return;
+  dailyEntries = dailyEntries.filter(d => d.id !== id);
+  saveDaily(); renderDaily(); updateGoals();
+}
+
+function renderDaily() {
+  const tbody = document.getElementById('dailyBody');
+  if (!dailyEntries.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">لا توجد بيانات 📭</td></tr>';
+    return;
+  }
+  tbody.innerHTML = dailyEntries.slice().reverse().map(d => {
+    const pnlColor = d.pnl >= 0 ? 'var(--green)' : 'var(--primary)';
+    let goalCell = '-';
+    if (d.goalAmt !== null) {
+      goalCell = d.end >= d.goalAmt
+        ? `<span class="badge bw">✓ ${d.goalPct}%</span>`
+        : `<span class="badge bl">✗ ${d.goalPct}%</span>`;
+    }
+    return `<tr>
+      <td style="color:var(--muted);font-size:0.75rem;">${d.date}</td>
+      <td>${d.start.toFixed(2)}</td>
+      <td>${d.end.toFixed(2)}</td>
+      <td style="color:${pnlColor};font-weight:800;">${d.pnl>=0?'+':''}${d.pnl.toFixed(2)}</td>
+      <td style="color:${pnlColor};font-weight:800;">${d.pct>=0?'+':''}${d.pct.toFixed(2)}%</td>
+      <td>${goalCell}</td>
+      <td><button class="del" onclick="deleteDailyEntry(${d.id})">🗑</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function updateGoals() {
+  const weekStart = parseFloat(document.getElementById('weekStart').value);
+  const weekGoalPct = parseFloat(document.getElementById('weekGoalPct').value);
+  const box = document.getElementById('weekGoalResult');
+  if (!weekStart || !weekGoalPct) { box.style.display = 'none'; return; }
+
+  const goalAmt = weekStart * (1 + weekGoalPct / 100);
+  document.getElementById('weekGoalAmt').textContent = goalAmt.toFixed(2) + ' ﷼';
+
+  const current = dailyEntries.length ? dailyEntries[dailyEntries.length - 1].end : weekStart;
+  document.getElementById('weekCurrentAmt').textContent = current.toFixed(2) + ' ﷼';
+
+  const statusEl = document.getElementById('weekResultStatus');
+  if (current >= goalAmt) {
+    statusEl.textContent = '✅ تحقق الهدف! +' + (current - goalAmt).toFixed(2) + ' ﷼ زيادة';
+    statusEl.className = 'rv green';
+  } else {
+    statusEl.textContent = 'باقي ' + (goalAmt - current).toFixed(2) + ' ﷼';
+    statusEl.className = 'rv red';
+  }
+  box.style.display = 'block';
 }
 
 // SMART CALC
@@ -824,28 +1031,87 @@ function importData(e) {
   e.target.value = '';
 }
 
-// MONTH SUMMARY
-function loadMonthFiles(e) {
-  const files = Array.from(e.target.files);
-  if (!files.length) return;
-  let allTrades = [];
-  let loaded = 0;
-  files.forEach(file => {
-    const reader = new FileReader();
-    reader.onload = function(ev) {
-      try {
-        const data = JSON.parse(ev.target.result);
-        if (Array.isArray(data)) allTrades = allTrades.concat(data);
-      } catch {}
-      loaded++;
-      if (loaded === files.length) showMonthSummary(allTrades);
-    };
-    reader.readAsText(file);
+// ===== WEEKLY ARCHIVE & MONTH SUMMARY =====
+let archive = JSON.parse(localStorage.getItem('daftar_archive') || '[]');
+
+function closeWeek() {
+  if (!trades.length) { alert('لا توجد صفقات لإغلاقها!'); return; }
+  if (!confirm(`إغلاق الأسبوع وأرشفة ${trades.length} صفقة؟ السجل سيصفر بعدها.`)) return;
+
+  const now = new Date();
+  archive.push({
+    id: Date.now(),
+    label: now.toLocaleDateString('ar-SA'),
+    month: now.getMonth(),
+    year: now.getFullYear(),
+    trades: trades
   });
-  e.target.value = '';
+
+  trades = [];
+  saveArchive();
+  save();
+  render();
+  renderArchive();
+  showMonthSummary();
+  alert('✅ تم إغلاق الأسبوع وأرشفته!');
 }
 
-function showMonthSummary(all) {
+function deleteArchiveWeek(id) {
+  if (!confirm('حذف هذا الأسبوع من الأرشيف نهائياً؟')) return;
+  archive = archive.filter(a => a.id !== id);
+  saveArchive();
+  renderArchive();
+  showMonthSummary();
+}
+
+function saveArchive() {
+  localStorage.setItem('daftar_archive', JSON.stringify(archive));
+  const s = document.getElementById('syncStatus');
+  if(s){ s.textContent = '⏳ يحفظ...'; s.style.color = '#8a6a1a'; }
+  docRef.set({ archive: archive, updatedAt: new Date().toISOString() }, { merge: true })
+    .catch(e => {
+      console.error(e);
+      if(s){ s.textContent = '❌ خطأ'; s.style.color = '#791C2E'; }
+    });
+}
+
+function renderArchive() {
+  const box = document.getElementById('archiveList');
+  if (!archive.length) {
+    box.innerHTML = '<div class="empty">لا يوجد أسابيع مؤرشفة 📭</div>';
+    return;
+  }
+  box.innerHTML = archive.slice().reverse().map(a => {
+    const closed = a.trades.filter(t => t.status !== 'open' && t.pnlRiyal !== null);
+    const net = closed.reduce((s,t) => s+t.pnlRiyal, 0);
+    return `<div class="best-worst">
+      <div class="bw-row">
+        <span style="font-weight:800;">${a.label} — ${a.trades.length} صفقة</span>
+        <span style="display:flex;align-items:center;gap:8px;">
+          <span style="font-weight:800;color:${net>=0?'var(--green)':'var(--primary)'};">${net>=0?'+':''}${net.toFixed(2)} ﷼</span>
+          <button class="del" onclick="deleteArchiveWeek(${a.id})">🗑</button>
+        </span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showMonthSummary() {
+  const now = new Date();
+  const monthWeeks = archive.filter(a => a.month === now.getMonth() && a.year === now.getFullYear());
+  const all = monthWeeks.flatMap(w => w.trades);
+
+  const resultBox = document.getElementById('monthResult');
+  const emptyBox = document.getElementById('monthEmpty');
+
+  if (!all.length) {
+    resultBox.style.display = 'none';
+    emptyBox.style.display = 'block';
+    return;
+  }
+  resultBox.style.display = 'block';
+  emptyBox.style.display = 'none';
+
   const closed = all.filter(t => t.status !== 'open' && t.pnlRiyal !== null);
   const wins = closed.filter(t => t.status === 'win');
   const losses = closed.filter(t => t.status === 'loss');
@@ -878,8 +1144,6 @@ function showMonthSummary(all) {
     document.getElementById('mWorstSym').textContent = worst.symbol;
     document.getElementById('mWorstPnl').textContent = worst.pnlRiyal.toFixed(2) + ' ﷼';
   }
-
-  document.getElementById('monthResult').style.display = 'block';
 }
 
 // ======= FIREBASE =======
@@ -904,6 +1168,16 @@ docRef.onSnapshot((snap) => {
       trades = data.trades;
       render();
     }
+    if (data && data.dailyEntries) {
+      dailyEntries = data.dailyEntries;
+      renderDaily();
+      updateGoals();
+    }
+    if (data && data.archive) {
+      archive = data.archive;
+      renderArchive();
+      showMonthSummary();
+    }
   }
   const s = document.getElementById('syncStatus');
   if(s){ s.textContent = '☁️ محفوظ'; s.style.color = '#1a7a4a'; }
@@ -913,7 +1187,18 @@ function save() {
   localStorage.setItem('daftar_v2', JSON.stringify(trades));
   const s = document.getElementById('syncStatus');
   if(s){ s.textContent = '⏳ يحفظ...'; s.style.color = '#8a6a1a'; }
-  docRef.set({ trades: trades, updatedAt: new Date().toISOString() })
+  docRef.set({ trades: trades, updatedAt: new Date().toISOString() }, { merge: true })
+    .catch(e => {
+      console.error(e);
+      if(s){ s.textContent = '❌ خطأ'; s.style.color = '#791C2E'; }
+    });
+}
+
+function saveDaily() {
+  localStorage.setItem('daftar_daily', JSON.stringify(dailyEntries));
+  const s = document.getElementById('syncStatus');
+  if(s){ s.textContent = '⏳ يحفظ...'; s.style.color = '#8a6a1a'; }
+  docRef.set({ dailyEntries: dailyEntries, updatedAt: new Date().toISOString() }, { merge: true })
     .catch(e => {
       console.error(e);
       if(s){ s.textContent = '❌ خطأ'; s.style.color = '#791C2E'; }
@@ -921,6 +1206,9 @@ function save() {
 }
 
 render();
+renderDaily();
+renderArchive();
+showMonthSummary();
 </script>
 </body>
 </html>
