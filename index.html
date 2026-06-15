@@ -386,20 +386,26 @@ tr:hover td{background:var(--card2);}
 
     <!-- Weekly Goal -->
     <div style="background:var(--card2);border-radius:11px;padding:13px;margin-bottom:10px;">
-      <div style="font-size:0.7rem;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">🎯 هدف الأسبوع</div>
-      <div class="row2">
-        <div>
-          <label>رصيد بداية الأسبوع (﷼)</label>
-          <input type="number" id="weekStart" placeholder="0" inputmode="decimal" oninput="updateGoals()">
-        </div>
-        <div>
-          <label>الهدف %</label>
-          <input type="number" id="weekGoalPct" placeholder="مثال: 100" inputmode="decimal" oninput="updateGoals()">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-size:0.7rem;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:1px;">🎯 هدف الأسبوع</div>
+        <button onclick="editWeekGoal()" style="background:none;border:none;cursor:pointer;font-size:0.8rem;color:var(--primary);font-weight:700;">✏️ تعديل</button>
+      </div>
+      <div id="weekGoalInputs">
+        <div class="row2">
+          <div>
+            <label>رصيد بداية الأسبوع (﷼)</label>
+            <input type="number" id="weekStart" placeholder="0" inputmode="decimal" oninput="updateGoals()">
+          </div>
+          <div>
+            <label>الهدف %</label>
+            <input type="number" id="weekGoalPct" placeholder="مثال: 100" inputmode="decimal" oninput="updateGoals()">
+          </div>
         </div>
       </div>
       <div id="weekGoalResult" class="rrows" style="display:none;margin-top:0;">
         <div class="rrow"><span class="rl">المستهدف</span><span class="rv green" id="weekGoalAmt">-</span></div>
         <div class="rrow"><span class="rl">رصيدك الحالي (آخر يوم مسجل)</span><span class="rv" id="weekCurrentAmt">-</span></div>
+        <div class="rrow"><span class="rl">الباقي للهدف</span><span class="rv" id="weekRemaining">-</span></div>
         <div class="rrow"><span class="rl">النتيجة</span><span class="rv" id="weekResultStatus">-</span></div>
       </div>
     </div>
@@ -419,6 +425,13 @@ tr:hover td{background:var(--card2);}
       </div>
       <div id="dayGoalResult" class="rrows" style="display:none;margin-top:0;margin-bottom:12px;">
         <div class="rrow"><span class="rl">المستهدف لليوم</span><span class="rv green" id="dayGoalAmt">-</span></div>
+        <div class="rrow"><span class="rl">المستهدف بالدولار</span><span class="rv green" id="dayGoalAmtUSD">-</span></div>
+      </div>
+      <label>رصيدك الحالي (﷼)</label>
+      <input type="number" id="dayCurrentBalance" placeholder="0" inputmode="decimal" oninput="updateDayRemaining()">
+      <div id="dayRemainingResult" class="rrows" style="display:none;margin-top:0;margin-bottom:12px;">
+        <div class="rrow"><span class="rl">الباقي للهدف (﷼)</span><span class="rv" id="dayRemaining">-</span></div>
+        <div class="rrow"><span class="rl">الباقي للهدف ($)</span><span class="rv" id="dayRemainingUSD">-</span></div>
       </div>
       <label>رصيد نهاية اليوم (﷼)</label>
       <input type="number" id="dayEnd" placeholder="0" inputmode="decimal">
@@ -615,7 +628,37 @@ function updateDayGoal() {
   if (!start || !pct) { box.style.display = 'none'; return; }
   const target = start * (1 + pct / 100);
   document.getElementById('dayGoalAmt').textContent = target.toFixed(2) + ' ﷼';
+  document.getElementById('dayGoalAmtUSD').textContent = '$' + (target / USD_SAR).toFixed(2);
   box.style.display = 'block';
+  updateDayRemaining();
+}
+
+function updateDayRemaining() {
+  const start = parseFloat(document.getElementById('dayStart').value);
+  const pct = parseFloat(document.getElementById('dayGoalPct').value);
+  const current = parseFloat(document.getElementById('dayCurrentBalance').value);
+  const box = document.getElementById('dayRemainingResult');
+  if (!start || !pct || !current) { box.style.display = 'none'; return; }
+  const target = start * (1 + pct / 100);
+  const remaining = target - current;
+  const remEl = document.getElementById('dayRemaining');
+  const remUSDEl = document.getElementById('dayRemainingUSD');
+  if (remaining <= 0) {
+    remEl.textContent = '✅ تحقق الهدف!';
+    remEl.className = 'rv green';
+    remUSDEl.textContent = '';
+  } else {
+    remEl.textContent = remaining.toFixed(2) + ' ﷼';
+    remEl.className = 'rv red';
+    remUSDEl.textContent = '$' + (remaining / USD_SAR).toFixed(2);
+    remUSDEl.className = 'rv red';
+  }
+  box.style.display = 'block';
+}
+
+function editWeekGoal() {
+  const inputs = document.getElementById('weekGoalInputs');
+  inputs.style.display = inputs.style.display === 'none' ? 'block' : 'none';
 }
 
 function saveDailyEntry() {
@@ -690,6 +733,16 @@ function updateGoals() {
 
   const current = dailyEntries.length ? dailyEntries[dailyEntries.length - 1].end : weekStart;
   document.getElementById('weekCurrentAmt').textContent = current.toFixed(2) + ' ﷼';
+
+  const remaining = goalAmt - current;
+  const remEl = document.getElementById('weekRemaining');
+  if (remaining <= 0) {
+    remEl.textContent = '✅ تحقق!';
+    remEl.className = 'rv green';
+  } else {
+    remEl.textContent = remaining.toFixed(2) + ' ﷼ / $' + (remaining / USD_SAR).toFixed(2);
+    remEl.className = 'rv red';
+  }
 
   const statusEl = document.getElementById('weekResultStatus');
   if (current >= goalAmt) {
